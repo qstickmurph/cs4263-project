@@ -2,19 +2,24 @@
 Course Project for CS4263: Deep Learning by Quinn Murphey, Adrian Ramos, and Gabriel Soliz.
 
 ## Project Methodology
-- The project will be hosted at github.com/Nragis/cs4263-project 
+- The project will be hosted at [github.com/Nragis/cs4263-project](https://github.com/Nragis/cs4263-project).
+  - *Note: Since GitHub diff viewing for Jupyter Notebooks is not very effective, use [ReviewNB](https://app.reviewnb.com/Nragis/cs4263-project/) for viewing changes to notebooks in commits and Pull Requests.*
+- The model will be created using Tensorflow 2.8 and will use the Keras API
+- All required python modules will be noted in (requirements.txt)[#requirements.txt] and can be installed using `pip install -r requirements.txt` in the root directory.
 
-## Inspiration
+## Project Details
 
-## Data
+### Inspiration (Reference Papers)
 
-## Model
+### Data
 
-## Results
+### Model
 
-# Project Requirements
+### Results
 
-## Proposal
+## Project Requirements
+
+### Proposal
 
 
 This course aims to introduce you to deep learning by integrating the topics with your research interests. We will discuss this in more detail in the first week of class.
@@ -36,7 +41,7 @@ Write a brief proposal for your semester-long project. Your proposal must be les
     - These sections can be as brief as 1 sentence, if you'd like.
     - Note that only 1 team member needs to submit this (and all) course project deliverable.
 
-## Update 1
+### Update 1
 
 With your project proposal approved, you should start working on your research. These updates are designed to keep you on track throughout the semester.
 
@@ -51,7 +56,7 @@ In this update, you'll start building a draft document for your final semester r
     - The abstract in a research paper provides a concise but thorough overview of what to expect in the paper. We will discuss this further in class. Read some of the reference research papers in this course for some inspiration!
     - Your abstract must be no longer than 7 sentences. Use the format shared in class.
 
-## Update 2
+### Update 2
 
 It's been a while since our last check-in - how is your research going?
 
@@ -72,7 +77,7 @@ In this update, you'll demonstrate your plan for your proposed research, by iden
         - Evaluation metrics - which metric(s) will you use to report your results on this data? Include a full description of the metric (i.e. it is not enough to say "accuracy", that is not clear enough to implement)
 3. Note that if you chose to use the evaluation metrics and data used in the related works, you will not need to run their code. Instead report their numbers and cite their paper. 
 
-## Update 3
+### Update 3
 
 The semester goes by quickly! It's time for another research check-in, focusing on drafting your final report and looking for any weak points.
 
@@ -87,6 +92,6 @@ The semester goes by quickly! It's time for another research check-in, focusing 
     - Take a moment to read through your draft from beginning to end. Is it cohesive?
     - Start filling in the blanks and making changes to all sections as needed. Pay attention to incomplete sentences and grammar.
 
-## Final Submission & Presentation
+### Final Submission & Presentation
 
 *TBA*
