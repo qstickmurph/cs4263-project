@@ -1,0 +1,14 @@
+keras==2.8.0
+Keras-Preprocessing==1.1.2
+matplot==0.1.9
+matplotlib==3.5.0
+numpy==1.22.3
+scikit-learn==0.24.1
+scipy==1.6.0
+tensorboard==2.8.0
+tensorflow==2.8.0
+tensorflow-datasets==4.5.2
+tensorflow-estimator==2.8.0
+tensorflow-gpu==2.8.0
+tensorflow-io-gcs-filesystem==0.24.0
+tensorflow-metadata==1.2.0
