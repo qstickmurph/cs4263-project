@@ -150,33 +150,38 @@ University of Texas at San Antonio\\
 
 \subsection{Internet Search History}
 
-    We will be using Google Trends as our source for Google search history data.
+    We will be using Google Trends (\url{https://trends.google.com/}) as our source for Google search history data.
     In this paper, we will be using the daily search for the respective
-    commodity: natural gas, <COMMODITY2>, and <COMMODITY3> and a few recession
-    related terms such as <RECESSION\_TERMS> from January 2004 to December 2021.
+    commodity: natural gas, [COMMODITY2], and [COMMODITY3] and a few recession
+    related terms such as [RECESSION\_TERMS] each covering the exact time period
+    of the commodity price dataset. These datasets are 2,372, [BLANK], and [BLANK]
+    records long for natural gas, [COMMODITY2], and [COMMODITY3] respectively.
 
 \subsection{News Report Sentimentality}
 
     We collected the title and bodytext of all news articles from Yahoo Finance
     (We want to experiment with different news sources, both financial and not,
-    and both credible and not) with the keyword natural gas, <COMMODITY2>, and 
-    <COMMODITY3> respectively, each covering the exact time period of the
-    commodity price dataset.
+    and both credible and not) with the keyword natural gas, [COMMODITY2], and 
+    [COMMODITY3] respectively, each covering the exact time period of the
+    commodity price dataset. We do not have an exact length for this dataset due
+    to still deciding which news sites to use.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Experiments}
 
-\subsection{Natural Gas}
+    In alignment with Tang, we will use mean absolute error (MAE) and root mean
+    square error (RMSE) to compare results. Our goal is to minimize these
+    values, indicating a more accurate regression.
 
-    
+    \begin{equation}
+        MAE = \frac{1}{N}\sum_i^N|y_i - \hat{y_i}| \\
+    \end{equation}
 
-\subsection{<COMMODITY2>}
+    \begin{equation}
+        RMSE = \sqrt{\frac{1}{N}\sum_i^N(y_i - \hat{y_i})^2}
+    \end{equation}
 
-    
-
-\subsection{<COMMODITY3>}
-
-    
+    Where $y_i$ and $\hat{y_i}$ are the real and predicted values respectively.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Results}
@@ -184,7 +189,84 @@ University of Texas at San Antonio\\
     Note: Our results relate to a prior direction of our paper, meaning they do not
     use the same datasets as we mention above.
 
-    
+    Using the World Economic Overview dataset published by the International
+    Monetary Fund semi-annually which tracks 44 economic indicators including
+    Gross Domestic Product (GDP), Gross Domestic Product per Capita (GDPPC), and
+    Average Consumer Prices Inflation Index (PCPI) for 194 countries from 1980
+    to 2020. While the database isn't completely full, most of the entries of
+    the 8820 row, 57 column dataset are filled.
+
+    After which, we turn the dataset into a multivariable (each indicator) time
+    series for each country. We then pass a 10 width window over each time
+    series, creating a data set of 6208 rows - each with a country, 396 input
+    variables (44 indicators across 9 years) and one output variable: the tenth
+    year value of GDPPC (in purchasing power).
+
+    We then split the dataset into a 0.8, 0.1, 0.1 split for training,
+    validation, and test datasets.
+
+    We compared four basic models to each other:
+    \begin{enumerate}
+        \item Linear: A simple matrix multiplication represented by a single layer,
+            single perceptron neural network.
+
+        \item Single-Layer Perceptron: A single layer of 512 neurons with ReLU
+            acivation functions.
+
+        \item Multi-Layer Perceptron: Two layers of 512 neurons with ReLU
+            activation functions
+
+        \item CNN Without Pooling: Three 1D convolutional layers with 3 length
+            kernels and 256, 128, and 64 filters respectively followed by one
+            layer of 256 ReLU perceptrons.
+    \end{enumerate}
+
+    Our results were as follows:
+
+    \begin{center}
+
+        {\small 
+            TABLE 1: COMPARISON OF GDPPC PREDICTION RESULTS ACROSS DIFFERENT MODELS
+        }
+
+        \begin{tabular}{||c c||}
+             \hline
+             Model & MAE\\ [0.5ex]
+             \hline\hline
+             Linear &  379.37 \\
+             \hline
+             Single & 20.31 \\
+             \hline
+             Multi & 19.74 \\
+             \hline
+             CNN & 16.00 \\
+             \hline
+        \end{tabular}
+        
+        \vspace{24pt}
+
+        \includegraphics[scale=0.27]{linearFiller.png}
+        {\small
+            FIGURE 2: LINEAR MODEL PREDICTIONS OF GDPPC
+        }
+
+        \includegraphics[scale=0.27]{singleFiller.png}
+        {\small
+            FIGURE 3: SINGLE-LAYER PERCEPTRON MODEL PREDICTIONS OF GDPPC
+        }
+
+        \includegraphics[scale=0.27]{multiFiller.png}
+        {\small
+            FIGURE 4: MULTI-LAYER PERCEPTRON MODEL PREDICTIONS OF GDPPC
+        }
+
+        \includegraphics[scale=0.27]{CNNFiller.png}
+        {\small
+            FIGURE 5: CNN WITHOUT POOLING MODEL PREDICTIONS OF GDPPC
+        }
+    \end{center}
+
+
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Conclusion}
