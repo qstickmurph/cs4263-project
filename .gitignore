@@ -3,3 +3,5 @@
 *.aux
 *.brf
 *.gz
+*.bbl
+*.blg
