@@ -11,7 +11,7 @@ __all__ = [
 
 import pandas as pd
 
-def standardize_nymex() -> pd.Dataframe:
+def standardize_nymex() -> pd.DataFrame:
     pass
 
 def restore_nymex() -> pd.DataFrame:

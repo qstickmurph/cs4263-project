@@ -1,7 +1,7 @@
 from .create_dataset import *
 from .plot import *
 from .preprocessing import *
-from read_scrape_data import *
+from .read_scrape_data import *
 
 # Expose symbols minus dunders, unless allowed above
 _exported_dunders = set([])
