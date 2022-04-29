@@ -99,14 +99,7 @@ def read_google_trends(
     google_trends_df.set_index("Date", inplace=True)
     google_trends_df = google_trends_df.astype(float32)
 
-    # Find breakpoints for dates not in our dataset yet
-    date_bps = find_breakpoints(
-        pd.date_range(start_date, end_date, freq='d').difference(
-                google_trends_df.index
-            ).union(
-                google_trends_df.loc[pd.isnull(google_trends_df).all(1), :].index
-            ))
-
+    
     # Add new keyword columns
     new_keywords = [
         x for x in keywords if x not in google_trends_df.columns
@@ -114,31 +107,34 @@ def read_google_trends(
     google_trends_df[new_keywords] = nan
 
     # Loop over those breakpoints and add them to our dataset
-    for d in range(len(date_bps)):
-        start_bp = date_bps[d][0]
-        end_bp = date_bps[d][1]
-        # Add new dates to index, fill with NaN
-        google_trends_df = google_trends_df.reindex(
-            google_trends_df.index.union(
-                pd.date_range(start_bp, end_bp, freq='d')),
-            fill_value=nan)
-        google_trends_df.index.names = ["Date"]
+    for keyword in keywords:
+        # Find breakpoints for dates not in our dataset yet
+        date_bps = find_breakpoints(
+            pd.date_range(start_date, end_date, freq='d').difference(
+                    google_trends_df.index
+                ).union(
+                    google_trends_df[pd.isnull(google_trends_df[keyword])].index
+                ))
 
-        google_trends_df_amd = google_trends_df.loc[
-            pd.date_range(start_bp, end_bp, freq='d')
-        ]
-        for keyword in keywords:
+        for d in range(len(date_bps)):
+            start_bp = date_bps[d][0]
+            end_bp = date_bps[d][1]
+            # Add new dates to index, fill with NaN
+            google_trends_df = google_trends_df.reindex(
+                google_trends_df.index.union(
+                    pd.date_range(start_bp, end_bp, freq='d')),
+                fill_value=nan)
+            google_trends_df.index.names = ["Date"]
+
             print(f"Scraping for {keyword} from {start_bp} to {end_bp}")
-            google_trends_df_amd[keyword] = _scrape_google_trends(
+            google_trends_df.loc[
+                pd.date_range(start_bp, end_bp, freq='d'), 
+                keyword] = _scrape_google_trends(
                                         [keyword], 
                                         categories,
                                         start_bp,
                                         end_bp,
-                                        )
-
-        google_trends_df.loc[
-                pd.date_range(start_bp, end_bp, freq='d')
-            ] = google_trends_df_amd
+                                        )[keyword]
 
         google_trends_df.to_csv(file)
 
@@ -150,6 +146,10 @@ def _scrape_google_trends(
         categories, 
         start_date: date,
         end_date: date) -> pd.DataFrame:
+
+    def diff_month(d1, d2):
+        return (d1.year - d2.year) * 12 + d1.month - d2.month
+    
     # Get pytrend suggestions and store them in exact_keywords
     keywords_codes = [pytrend.suggestions(keyword=i)[0] for i in keywords] 
     df_CODES= pd.DataFrame(keywords_codes)
@@ -160,16 +160,18 @@ def _scrape_google_trends(
     individual_exact_keyword = [list(x) for x in individual_exact_keyword]
 
     # Set default vars
-    overall_timeframe = start_date.isoformat() + " " + end_date.isoformat()
+    overall_timeframe = date(year=2004, month=1, day=1).isoformat() \
+        + " " \
+        + (date.today() - relativedelta(days=1)).isoformat()
     country = "US"
     search_type = ''
 
     # Split timeframe into 1 month chunks
     dates = []
-    while start_date < end_date:
-        dates.append(start_date)
-        start_date = start_date + relativedelta(months=6)
-    dates.append(end_date + relativedelta(days=1))
+    temp_date = start_date
+    while temp_date < end_date:
+        dates.append(temp_date)
+        temp_date = temp_date + relativedelta(months=6)
 
     # Find overall timeframe
 
@@ -184,15 +186,17 @@ def _scrape_google_trends(
                                 cat=category,
                                 gprop=search_type)
         overall_data = pytrend.interest_over_time()
+        
         time.sleep(5)
-        month_num = 0
-        for i in range(len(dates)-1):
+        month_num = diff_month(start_date, datetime(year=2004,month=1,day=1))
+        for i in range(len(dates)):
             pytrend.build_payload(
                             kw_list=[keyword], 
                             timeframe = dates[i].isoformat() 
                                         + " " 
-                                        + (dates[i + 1] 
-                                        - relativedelta(days=1)).isoformat(), 
+                                        + (dates[i] 
+                                            + relativedelta(months=6)
+                                            - relativedelta(days=1)).isoformat(), 
                             geo = country, 
                             cat=category,
                             gprop=search_type)
@@ -200,25 +204,19 @@ def _scrape_google_trends(
             month_data = pytrend.interest_over_time()
 
             # normalize data based on overall_data
-            for month in range(0,6):
-                if month != 5:
+            for month in range(6):
+                if (dates[i] + relativedelta(months=month)) < end_date:
                     indicies = month_data.index.intersection(
                         pd.date_range(
                             dates[i] + relativedelta(months=month), 
                             dates[i] + relativedelta(months=month+1) 
-                                     - relativedelta(days=1), 
+                                        - relativedelta(days=1), 
                             freq='d'))
-                else:
-                    indicies = month_data.index.intersection(
-                        pd.date_range(
-                            dates[i] + relativedelta(months=month), 
-                            dates[i+1] - relativedelta(days=1), 
-                            freq='d'))
-
-                month_data.loc[indicies] = \
-                            month_data.loc[indicies] \
-                            * (overall_data.iloc[month_num][keyword].mean() \
-                            / month_data.loc[indicies].mean())
+                    
+                    month_data.loc[indicies] = \
+                                month_data.loc[indicies] \
+                                * (overall_data.iloc[month_num][keyword].mean() \
+                                / month_data.loc[indicies].mean())
 
                 month_num += 1
 
@@ -240,4 +238,6 @@ def _scrape_google_trends(
 
     df_trends = pd.concat(trend_dict, axis=1)
     df_trends.columns = df_trends.columns.droplevel(0) #drop outside header
+
+    df_trends = df_trends.loc[pd.date_range(start_date, end_date, freq='d')].astype(float32)
     return df_trends

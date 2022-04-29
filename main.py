@@ -31,3 +31,4 @@ google_trends_df = read_google_trends(
 print(google_trends_df)
 
 #print(list(google_trends_df.loc[pd.isnull(google_trends_df).any(1), :].index.values))
+
