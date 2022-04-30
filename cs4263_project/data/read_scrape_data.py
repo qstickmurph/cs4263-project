@@ -63,8 +63,8 @@ def read_google_trends(
     assert end_date < datetime.today(), \
         "end date must be before today"
 
-    print(f"Getting google trends data for {keywords} from {start_date.date()} \
-        to {end_date.date()}")
+    print(f"Getting google trends data for {keywords} from {start_date.date()}"
+        + f" to {end_date.date()}")
 
     def find_breakpoints(datetime_index) -> list:
         if len(datetime_index) == 0:
@@ -90,13 +90,14 @@ def read_google_trends(
     try:
         google_trends_df = pd.read_csv(file, 
                                        parse_dates=["Date"])
+        google_trends_df.set_index("Date", inplace=True)
 
     except FileNotFoundError: # file doesn't exist
         google_trends_df = pd.DataFrame(
-            columns=["Date"]+keywords, 
-            dtype=[datetime] + [float32]*len(keywords))
+            index=pd.date_range(start_date, end_date, freq='d'),
+            columns=keywords, 
+            dtype=float32)
 
-    google_trends_df.set_index("Date", inplace=True)
     google_trends_df = google_trends_df.astype(float32)
 
     
