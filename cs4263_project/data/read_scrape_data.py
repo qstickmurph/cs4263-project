@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 import math
 import time
 
-from numpy import float32, nan
+from numpy import float32, nan, real_if_close
 import pandas as pd
 from pytrends.request import TrendReq
 
@@ -169,7 +169,7 @@ def _scrape_google_trends(
     # Split timeframe into 1 month chunks
     dates = []
     temp_date = start_date
-    while temp_date < end_date:
+    while temp_date <= end_date:
         dates.append(temp_date)
         temp_date = temp_date + relativedelta(months=6)
 
@@ -202,6 +202,18 @@ def _scrape_google_trends(
                             gprop=search_type)
             time.sleep(5) # sleep to prevent google shutting us down
             month_data = pytrend.interest_over_time()
+            month_data = month_data.reindex(
+                pd.date_range(
+                    dates[i],
+                    dates[i]+relativedelta(months=6)-relativedelta(days=1),
+                    freq='d'))
+            month_data.index.names = ["Date"]
+
+            #print(
+            #    pd.date_range(
+            #        dates[i],
+            #        dates[i]+relativedelta(months=6)-relativedelta(days=1),
+            #        freq='d').difference(month_data.index))
 
             # normalize data based on overall_data
             for month in range(6):
