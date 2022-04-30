@@ -1,3 +1,4 @@
+from cgi import test
 from datetime import date, datetime
 from tabnanny import verbose
 from dateutil.relativedelta import relativedelta
@@ -49,9 +50,12 @@ REPEATS       = 1
 MAX_SEARCH = 50
 EPOCHS_PER_SEARCH = 25
 
-STACKED_LSTM_HYPERPARAMS = True
-STACKED_BILSTM_HYPERPARAMS = True
-ENSEMBLE_STACKED_BILSTM_HYPERPARAMS = False
+SEARCH_STACKED_LSTM_HYPERPARAMS = True
+SEARCH_STACKED_BILSTM_HYPERPARAMS = True
+TRAIN_STACKED_LSTM = True
+TRAIN_STACKED_BILSTM = True
+TEST_STACKED_LSTM = True
+TEST_STACKED_BILSTM = True
 
 FINAL_TRAINING_EPOCHS = 250
 
@@ -223,20 +227,19 @@ stacked_lstm_tuner = kt.BayesianOptimization(
     overwrite=False
 )
 
-stacked_lstm_tuner.search(
-    train_ds.repeat(EPOCHS_PER_SEARCH),
-    steps_per_epoch=batches_per_epoch,
-    epochs=EPOCHS_PER_SEARCH,
-    use_multiprocessing=True
-)
+if SEARCH_STACKED_LSTM_HYPERPARAMS:
+    print()
+    print("Searching Stacked LSTM Hyperparameters")
+    print()
+    stacked_lstm_tuner.search(
+        train_ds.repeat(EPOCHS_PER_SEARCH),
+        steps_per_epoch=batches_per_epoch,
+        epochs=EPOCHS_PER_SEARCH,
+        use_multiprocessing=True
+    )
+    stacked_lstm_tuner.results_summary(num_trials=1)
 
 best_stacked_lstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
-
-stacked_lstm_tuner.results_summary(num_trials=1)
-
-print()
-print("Searching Stacked BiLSTM Hyperparameters")
-print()
 
 stacked_bilstm_tuner = kt.BayesianOptimization(
     create_stacked_bilstm_hp,
@@ -246,80 +249,131 @@ stacked_bilstm_tuner = kt.BayesianOptimization(
     project_name='stacked_bilstm',
     overwrite=False
 )
+if SEARCH_STACKED_BILSTM_HYPERPARAMS:
+    print()
+    print("Searching Stacked BiLSTM Hyperparameters")
+    print()
 
-stacked_lstm_tuner.search(
-    train_ds.repeat(EPOCHS_PER_SEARCH),
-    steps_per_epoch=batches_per_epoch,
-    epochs=EPOCHS_PER_SEARCH,
-    use_multiprocessing=True
-)
+
+
+    stacked_lstm_tuner.search(
+        train_ds.repeat(EPOCHS_PER_SEARCH),
+        steps_per_epoch=batches_per_epoch,
+        epochs=EPOCHS_PER_SEARCH,
+        use_multiprocessing=True
+    )
+    stacked_bilstm_tuner.results_summary(num_trials=1)
 
 best_stacked_bilstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
 
-stacked_bilstm_tuner.results_summary(num_trials=1)
+if TRAIN_STACKED_LSTM:
+    print()
+    print("Training best stacked LSTM model")
+    print()
 
-print()
-print("Training best stacked LSTM model")
-print()
+    stacked_lstm = stacked_lstm_tuner.hypermodel.build(best_stacked_lstm_hps)
 
-stacked_lstm = stacked_lstm_tuner.hypermodel.build(best_stacked_lstm_hps)
+    save_best = tf.keras.callbacks.ModelCheckpoint(
+            "models/trained/stacked_lstm",
+            monitor='val_loss',
+            verbose=0,
+            save_best_only=True,
+            mode='min'
+    )
 
-save_best = tf.keras.callbacks.ModelCheckpoint(
-        "models/trained/stacked_lstm",
-        monitor='val_loss',
-        verbose=0,
-        save_best_only=True,
-        mode='min'
-)
+    # Train model
+    history = stacked_lstm.fit(train_ds,
+                                initial_epoch=0,
+                                epochs=FINAL_TRAINING_EPOCHS,
+                                batch_size=BATCH_SIZE,
+                                validation_data=val_ds,
+                                callbacks=[save_best],
+                                verbose=1)
 
-# Train model
-history = stacked_lstm.fit(train_ds,
-                            initial_epoch=0,
-                            epochs=FINAL_TRAINING_EPOCHS,
-                            batch_size=BATCH_SIZE,
-                            validation_data=val_ds,
-                            callbacks=[save_best],
-                            verbose=1)
+    loss_values = history.history['loss']
+    val_loss_values = history.history['val_loss']
+    epochs = range(1, len(loss_values)+1)
+    plt.plot(epochs, loss_values, label='Training Loss')
+    plt.plot(epochs, val_loss_values, label='Validation Loss')
+    plt.gca().set_yscale('log')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+    plt.savefig("images/stacked_lstm_loss_over_epoch")
 
-loss_values = history.history['loss']
-epochs = range(1, len(loss_values)+1)
-plt.plot(epochs, loss_values, label='Training Loss')
-plt.gca().set_yscale('log')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.show()
-plt.savefig("images/stacked_lstm_loss_over_epoch")
+if TRAIN_STACKED_BILSTM:
+    print()
+    print("Training best stacked BiLSTM model")
+    print()
 
-print()
-print("Training best stacked BiLSTM model")
-print()
+    stacked_bilstm = stacked_bilstm_tuner.hypermodel.build(best_stacked_bilstm_hps)
 
-stacked_bilstm = stacked_bilstm_tuner.hypermodel.build(best_stacked_bilstm_hps)
+    save_best = tf.keras.callbacks.ModelCheckpoint(
+            "models/trained/stacked_bilstm",
+            monitor='val_loss',
+            verbose=0,
+            save_best_only=True,
+            mode='min'
+    )
 
-save_best = tf.keras.callbacks.ModelCheckpoint(
-        "models/trained/stacked_bilstm",
-        monitor='val_loss',
-        verbose=0,
-        save_best_only=True,
-        mode='min'
-)
+    # Train model
+    history = stacked_bilstm.fit(train_ds,
+                                initial_epoch=0,
+                                epochs=FINAL_TRAINING_EPOCHS,
+                                batch_size=BATCH_SIZE,
+                                validation_data=val_ds,
+                                callbacks=[save_best],
+                                verbose=1)
 
-# Train model
-history = stacked_bilstm.fit(train_ds,
-                            initial_epoch=0,
-                            epochs=FINAL_TRAINING_EPOCHS,
-                            batch_size=BATCH_SIZE,
-                            validation_data=val_ds,
-                            callbacks=[save_best],
-                            verbose=1)
+    loss_values = history.history['loss']
+    val_loss_values = history.history['val_loss']
+    epochs = range(1, len(loss_values)+1)
+    plt.plot(epochs, loss_values, label='Training Loss')
+    plt.plot(epochs, val_loss_values, label='Validation Loss')
+    plt.gca().set_yscale('log')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+    plt.savefig("images/stacked_bilstm_loss_over_epoch")
 
-loss_values = history.history['loss']
-epochs = range(1, len(loss_values)+1)
-plt.plot(epochs, loss_values, label='Training Loss')
-plt.gca().set_yscale('log')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.show()
-plt.savefig("images/stacked_bilstm_loss_over_epoch")
+test_results = {}
+
+if TEST_STACKED_LSTM:
+    print()
+    print("Testing Stacked LSTM")
+
+    stacked_lstm = tf.keras.models.load_model("models/trained/stacked_lstm")
+
+
+    test_results["stacked_lstm"] = dict(zip(stacked_lstm.metrics_names, stacked_lstm.evaluate(test_ds, verbose=0)))
+
+    print("Printing Stacked LSTM Predictions")
+    predictions_df = get_predictions_df(model=stacked_lstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_DATES)
+    for label in LABELS:
+        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_" + label.replace(" ", "_") + "_sparse.png")
+        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_" + label.replace(" ", "_") + "_dense.png")
+
+    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_sparse.png")
+    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_dense.png")
+
+tf.keras.backend.clear_session()
+
+if TEST_STACKED_BILSTM:
+    print()
+    print("Testing Stacked BILSTM")
+
+    stacked_bilstm = tf.keras.models.load_model("models/trained/stacked_bilstm")
+
+
+    test_results["stacked_bilstm"] = dict(zip(stacked_bilstm.metrics_names, stacked_bilstm.evaluate(test_ds, verbose=0)))
+
+    print("Printing Stacked BILSTM Predictions")
+    predictions_df = get_predictions_df(model=stacked_bilstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_DATES)
+    for label in LABELS:
+        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_" + label.replace(" ", "_") + "_sparse.png")
+        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_" + label.replace(" ", "_") + "_dense.png")
+        
+    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_sparse.png")
+    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_dense.png")
