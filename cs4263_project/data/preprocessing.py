@@ -54,7 +54,7 @@ def standardize_google_trends(google_trends_df : pd.DataFrame) -> pd.DataFrame:
                 - google_trends_df_standardized[column].mean()) \
                     / google_trends_df_standardized[column].std()
 
-    google_trends_df_standardized
+    return google_trends_df_standardized
 
 def restore_google_trends(google_trends_df_standardized) -> pd.DataFrame:
     global means

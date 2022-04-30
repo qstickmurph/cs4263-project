@@ -78,5 +78,5 @@ def plot(fig, data, units=None, label_width=0, predictions=None, density=1, sepe
     if not seperate:
         plt.legend()
     plt.tight_layout()
-    if file:
-        plt.savefig(file)
+    plt.savefig(file)
+    plt.clf()
