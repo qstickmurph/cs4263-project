@@ -1,21 +1,23 @@
 from datetime import date, datetime
-from tkinter import END
-from tracemalloc import start
+from tabnanny import verbose
 from dateutil.relativedelta import relativedelta
+import math
 import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import keras_tuner as kt
 
+from cs4263_project.models import *
 from cs4263_project.data import *
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Index Constants
-START_DATE  = datetime(year=2004, month=1, day=1)
+START_DATE  = datetime(year=2004, month=1, day=5)
 END_DATE    = datetime(year=2019, month=6, day=28)
 FULL_INDEX  = pd.date_range(START_DATE, END_DATE, freq='d')
 
@@ -36,7 +38,7 @@ LABELS = [
 
 # Dataset Constants
 FEATURE_WIDTH = 0
-LABEL_WIDTH   = 0
+LABEL_WIDTH   = 1
 TRAIN_SPLIT   = 0.8
 VAL_SPLIT     = 0.1
 TEST_SPLIT    = 0.1
@@ -45,15 +47,13 @@ REPEATS       = 1
 
 ### Hyperparam Search Constants
 MAX_SEARCH = 50
-MAX_EPOCHS = 25
-INPUT_SHAPE = (None, len(FEATURES))
-OUTPUT_SHAPE = (LABEL_WIDTH, len(LABELS))
+EPOCHS_PER_SEARCH = 25
 
 STACKED_LSTM_HYPERPARAMS = True
 STACKED_BILSTM_HYPERPARAMS = True
 ENSEMBLE_STACKED_BILSTM_HYPERPARAMS = False
 
-NUM_EPOCHS = 250
+FINAL_TRAINING_EPOCHS = 250
 
 # Fetch Data
 
@@ -168,6 +168,8 @@ for column in google_trends_df_std.columns:
 plot(fig, google_trends_df_std,units="Search Volume", seperate=True, density=1, file="images/google_trends_data_standardized.png")
 plot(fig, google_trends_df_std,units="Search Volume", seperate=True, density=30, file="images/google_trends_data_monthly_standardized.png")
 
+print("Creating tf Dataset")
+
 full_df = pd.concat([nymex_df_std, google_trends_df_std],axis=1).loc[
     pd.date_range(START_DATE, END_DATE, freq='d')
 ]
@@ -180,14 +182,8 @@ if FEATURE_WIDTH > 0:
         feature_width=FEATURE_WIDTH, 
         label_width=LABEL_WIDTH, 
         label_dates=LABEL_INDEX)
-elif BATCH_SIZE > 0:
-    dataset = variable_df_to_ds(
-        df=full_df.loc[FULL_INDEX], 
-        features=FEATURES, 
-        labels=LABELS, 
-        label_width=LABEL_WIDTH, 
-        label_dates=LABEL_INDEX)
-else:
+    create_models.INPUT_SHAPE = (FEATURE_WIDTH, len(FEATURES))
+elif BATCH_SIZE > 1:
     dataset = batched_variable_df_to_ds(
         full_df.loc[FULL_INDEX], 
         features=FEATURES, 
@@ -195,6 +191,17 @@ else:
         label_width=LABEL_WIDTH, 
         label_dates=LABEL_INDEX, 
         batch_size=BATCH_SIZE)
+    create_models.INPUT_SHAPE = (None, len(FEATURES))
+else:
+    dataset = variable_df_to_ds(
+        df=full_df.loc[FULL_INDEX], 
+        features=FEATURES, 
+        labels=LABELS, 
+        label_width=LABEL_WIDTH, 
+        label_dates=LABEL_INDEX)
+    create_models.INPUT_SHAPE = (None, len(FEATURES))
+
+create_models.OUTPUT_SHAPE= (LABEL_WIDTH, len(LABELS))
 
 train_ds, val_ds, test_ds = train_val_test_split(
         ds=dataset, 
@@ -205,3 +212,114 @@ train_ds, val_ds, test_ds = train_val_test_split(
         repeats=REPEATS, 
         ds_size=len(LABEL_INDEX))
 
+batches_per_epoch = math.ceil(int(TRAIN_SPLIT* len(LABEL_INDEX)) / BATCH_SIZE)
+
+stacked_lstm_tuner = kt.BayesianOptimization(
+    create_stacked_lstm_hp,
+    objective='loss',
+    max_trials=MAX_SEARCH,
+    directory='models/hyperparam_search',
+    project_name='stacked_lstm',
+    overwrite=False
+)
+
+stacked_lstm_tuner.search(
+    train_ds.repeat(EPOCHS_PER_SEARCH),
+    steps_per_epoch=batches_per_epoch,
+    epochs=EPOCHS_PER_SEARCH,
+    use_multiprocessing=True
+)
+
+best_stacked_lstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
+
+stacked_lstm_tuner.results_summary(num_trials=1)
+
+print()
+print("Searching Stacked BiLSTM Hyperparameters")
+print()
+
+stacked_bilstm_tuner = kt.BayesianOptimization(
+    create_stacked_bilstm_hp,
+    objective='loss',
+    max_trials=MAX_SEARCH,
+    directory='models/hyperparam_search',
+    project_name='stacked_bilstm',
+    overwrite=False
+)
+
+stacked_lstm_tuner.search(
+    train_ds.repeat(EPOCHS_PER_SEARCH),
+    steps_per_epoch=batches_per_epoch,
+    epochs=EPOCHS_PER_SEARCH,
+    use_multiprocessing=True
+)
+
+best_stacked_bilstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
+
+stacked_bilstm_tuner.results_summary(num_trials=1)
+
+print()
+print("Training best stacked LSTM model")
+print()
+
+stacked_lstm = stacked_lstm_tuner.hypermodel.build(best_stacked_lstm_hps)
+
+save_best = tf.keras.callbacks.ModelCheckpoint(
+        "models/trained/stacked_lstm",
+        monitor='val_loss',
+        verbose=0,
+        save_best_only=True,
+        mode='min'
+)
+
+# Train model
+history = stacked_lstm.fit(train_ds,
+                            initial_epoch=0,
+                            epochs=FINAL_TRAINING_EPOCHS,
+                            batch_size=BATCH_SIZE,
+                            validation_data=val_ds,
+                            callbacks=[save_best],
+                            verbose=1)
+
+loss_values = history.history['loss']
+epochs = range(1, len(loss_values)+1)
+plt.plot(epochs, loss_values, label='Training Loss')
+plt.gca().set_yscale('log')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+plt.savefig("images/stacked_lstm_loss_over_epoch")
+
+print()
+print("Training best stacked BiLSTM model")
+print()
+
+stacked_bilstm = stacked_bilstm_tuner.hypermodel.build(best_stacked_bilstm_hps)
+
+save_best = tf.keras.callbacks.ModelCheckpoint(
+        "models/trained/stacked_bilstm",
+        monitor='val_loss',
+        verbose=0,
+        save_best_only=True,
+        mode='min'
+)
+
+# Train model
+history = stacked_bilstm.fit(train_ds,
+                            initial_epoch=0,
+                            epochs=FINAL_TRAINING_EPOCHS,
+                            batch_size=BATCH_SIZE,
+                            validation_data=val_ds,
+                            callbacks=[save_best],
+                            verbose=1)
+
+loss_values = history.history['loss']
+epochs = range(1, len(loss_values)+1)
+plt.plot(epochs, loss_values, label='Training Loss')
+plt.gca().set_yscale('log')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+plt.savefig("images/stacked_bilstm_loss_over_epoch")
