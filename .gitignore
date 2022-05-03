@@ -9,3 +9,5 @@
 *.fls
 
 *__pycache__*
+
+models/*

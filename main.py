@@ -1,6 +1,7 @@
 from cgi import test
 from datetime import date, datetime
 from tabnanny import verbose
+from tracemalloc import stop
 from dateutil.relativedelta import relativedelta
 import math
 import os
@@ -50,10 +51,10 @@ REPEATS       = 1
 MAX_SEARCH = 50
 EPOCHS_PER_SEARCH = 25
 
-SEARCH_STACKED_LSTM_HYPERPARAMS = True
-SEARCH_STACKED_BILSTM_HYPERPARAMS = True
-TRAIN_STACKED_LSTM = True
-TRAIN_STACKED_BILSTM = True
+SEARCH_STACKED_LSTM_HYPERPARAMS = False
+SEARCH_STACKED_BILSTM_HYPERPARAMS = False
+TRAIN_STACKED_LSTM = False
+TRAIN_STACKED_BILSTM = False
 TEST_STACKED_LSTM = True
 TEST_STACKED_BILSTM = True
 
@@ -218,6 +219,8 @@ train_ds, val_ds, test_ds = train_val_test_split(
 
 batches_per_epoch = math.ceil(int(TRAIN_SPLIT* len(LABEL_INDEX)) / BATCH_SIZE)
 
+stop_early = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
+
 stacked_lstm_tuner = kt.BayesianOptimization(
     create_stacked_lstm_hp,
     objective='loss',
@@ -235,7 +238,8 @@ if SEARCH_STACKED_LSTM_HYPERPARAMS:
         train_ds.repeat(EPOCHS_PER_SEARCH),
         steps_per_epoch=batches_per_epoch,
         epochs=EPOCHS_PER_SEARCH,
-        use_multiprocessing=True
+        use_multiprocessing=True,
+        callbacks=[stop_early]
     )
     stacked_lstm_tuner.results_summary(num_trials=1)
 
@@ -254,13 +258,13 @@ if SEARCH_STACKED_BILSTM_HYPERPARAMS:
     print("Searching Stacked BiLSTM Hyperparameters")
     print()
 
-
-
-    stacked_lstm_tuner.search(
+    stacked_bilstm_tuner.search(
         train_ds.repeat(EPOCHS_PER_SEARCH),
         steps_per_epoch=batches_per_epoch,
         epochs=EPOCHS_PER_SEARCH,
-        use_multiprocessing=True
+        use_multiprocessing=True,
+        callbacks=[stop_early]
+
     )
     stacked_bilstm_tuner.results_summary(num_trials=1)
 
@@ -299,8 +303,8 @@ if TRAIN_STACKED_LSTM:
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.show()
     plt.savefig("images/stacked_lstm_loss_over_epoch")
+    plt.clf()
 
 if TRAIN_STACKED_BILSTM:
     print()
@@ -335,45 +339,47 @@ if TRAIN_STACKED_BILSTM:
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.show()
     plt.savefig("images/stacked_bilstm_loss_over_epoch")
+    plt.clf()
 
 test_results = {}
 
 if TEST_STACKED_LSTM:
     print()
     print("Testing Stacked LSTM")
-
     stacked_lstm = tf.keras.models.load_model("models/trained/stacked_lstm")
-
-
     test_results["stacked_lstm"] = dict(zip(stacked_lstm.metrics_names, stacked_lstm.evaluate(test_ds, verbose=0)))
 
-    print("Printing Stacked LSTM Predictions")
-    predictions_df = get_predictions_df(model=stacked_lstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_DATES)
-    for label in LABELS:
-        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_" + label.replace(" ", "_") + "_sparse.png")
-        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_" + label.replace(" ", "_") + "_dense.png")
+    print("Calculating Stacked LSTM Predictions")
+    predictions_df = get_predictions_df(model=stacked_lstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_INDEX)
+    predictions_df.to_csv("data/predictions_stacked_lstm.csv")
 
-    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_sparse.png")
-    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_lstm_predictions_dense.png")
+    print("Printing Stacked LSTM Predictions")
+    for label in LABELS:
+        plot(fig, nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[[label]], density=30, seperate=True, file="images/stacked_lstm_predictions_monthly_" + label.replace(" ", "_") + ".png")
+        plot(fig, nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[[label]], density=1, seperate=True, file="images/stacked_lstm_predictions_" + label.replace(" ", "_") + ".png")
+
+    plot(fig, nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file="images/stacked_lstm_predictions_monthly.png")
+    plot(fig, nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file="images/stacked_lstm_predictions.png")
 
 tf.keras.backend.clear_session()
 
 if TEST_STACKED_BILSTM:
     print()
     print("Testing Stacked BILSTM")
-
     stacked_bilstm = tf.keras.models.load_model("models/trained/stacked_bilstm")
-
-
     test_results["stacked_bilstm"] = dict(zip(stacked_bilstm.metrics_names, stacked_bilstm.evaluate(test_ds, verbose=0)))
 
+    print("Calculating Stacked BiLSTM Predictions")
+    predictions_df = get_predictions_df(model=stacked_bilstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_INDEX)
+    predictions_df.to_csv("data/predictions_stacked_bilstm.csv")
+
     print("Printing Stacked BILSTM Predictions")
-    predictions_df = get_predictions_df(model=stacked_bilstm, dataset=dataset, label_width=LABEL_WIDTH, labels=LABELS, index=LABEL_DATES)
     for label in LABELS:
-        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_" + label.replace(" ", "_") + "_sparse.png")
-        plot(nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[label], density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_" + label.replace(" ", "_") + "_dense.png")
+        plot(fig, nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[[label]], density=30, seperate=True, file="images/stacked_bilstm_predictions_monthly_" + label.replace(" ", "_") + ".png")
+        plot(fig, nymex_df[[label]], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df[[label]], density=1, seperate=True, file="images/stacked_bilstm_predictions_" + label.replace(" ", "_") + ".png")
         
-    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_sparse.png")
-    plot(nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file=TOP_FOLDER_NAME+"images/stacked_bilstm_predictions_dense.png")
+    plot(fig, nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=30, seperate=True, file="images/stacked_bilstm_predictions_monthly.png")
+    plot(fig, nymex_df[LABELS], units="$$$", label_width=LABEL_WIDTH, predictions=predictions_df, density=1, seperate=True, file="images/stacked_bilstm_predictions.png")
+
+print(test_results)

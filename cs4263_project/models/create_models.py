@@ -74,7 +74,7 @@ def create_stacked_lstm_hp(hp):
 
     num_dense_layers = hp.Int('num_dense_layers', min_value=1, max_value=3, step=1)
     num_dense_nodes = hp.Int('num_dense_nodes', min_value=256, max_value=2048, step=256)
-    dropout_rate = hp.Float('dropout_rate', min_value=0, max_value=1, step=0.1)
+    dropout_rate = hp.Float('dropout_rate', min_value=0, max_value=0.9, step=0.1)
     # Add stacked dense layers
     for i in range(num_dense_layers):
         # Add dropout layer
@@ -86,8 +86,8 @@ def create_stacked_lstm_hp(hp):
     model.add(tf.keras.layers.Dense(units=OUTPUT_SHAPE[0] * OUTPUT_SHAPE[1]))
     model.add(tf.keras.layers.Reshape(target_shape=OUTPUT_SHAPE))
 
-    learning_rate = hp.Float('learning_rate', min_value=1e-6, max_value=1e-1, sampling='log')
-    beta_1 = hp.Float('beta_1', min_value=0.5, max_value=1, sampling='linear')
+    learning_rate = hp.Float('learning_rate', min_value=1e-6, max_value=1e-2, sampling='log')
+    beta_1 = hp.Float('beta_1', min_value=0.8, max_value=0.999, sampling='linear')
     # Compile model
     model.compile(loss=tf.losses.MeanSquaredError(),
                 optimizer=tf.optimizers.Adam(learning_rate=learning_rate, beta_1=beta_1),
@@ -152,13 +152,13 @@ def create_stacked_bilstm_hp(hp):
     # Add stacked LSTM layers
     for i in range(num_lstm_layers):
         if i < num_lstm_layers-1:
-            model.add(tf.keras.Bidirectional(tf.keras.layers.LSTM(units=num_lstm_nodes, input_shape=INPUT_SHAPE, return_sequences=True, name=f'LSTM_{i}')))
+            model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=num_lstm_nodes, input_shape=INPUT_SHAPE, return_sequences=True, name=f'LSTM_{i}')))
         else:
-            model.add(tf.keras.Bidirectional(tf.keras.layers.LSTM(units=num_lstm_nodes, input_shape=INPUT_SHAPE, return_sequences=False, name=f'LSTM_{i}')))
+            model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=num_lstm_nodes, input_shape=INPUT_SHAPE, return_sequences=False, name=f'LSTM_{i}')))
 
     num_dense_layers = hp.Int('num_dense_layers', min_value=1, max_value=3, step=1)
     num_dense_nodes = hp.Int('num_dense_nodes', min_value=256, max_value=2048, step=256)
-    dropout_rate = hp.Float('dropout_rate', min_value=0, max_value=1, step=0.1)
+    dropout_rate = hp.Float('dropout_rate', min_value=0, max_value=0.9, step=0.1)
     # Add stacked dense layers
     for i in range(num_dense_layers):
         # Add dropout layer
@@ -170,8 +170,8 @@ def create_stacked_bilstm_hp(hp):
     model.add(tf.keras.layers.Dense(units=OUTPUT_SHAPE[0] * OUTPUT_SHAPE[1]))
     model.add(tf.keras.layers.Reshape(target_shape=OUTPUT_SHAPE))
 
-    learning_rate = hp.Float('learning_rate', min_value=1e-6, max_value=1e-1, sampling='log')
-    beta_1 = hp.Float('beta_1', min_value=0.5, max_value=1, sampling='uniform')
+    learning_rate = hp.Float('learning_rate', min_value=1e-6, max_value=1e-2, sampling='log')
+    beta_1 = hp.Float('beta_1', min_value=0.8, max_value=0.999, sampling='linear')
     # Compile model
     model.compile(loss=tf.losses.MeanSquaredError(),
                 optimizer=tf.optimizers.Adam(learning_rate=learning_rate, beta_1=beta_1),

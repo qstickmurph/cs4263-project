@@ -78,24 +78,25 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Introduction}
 
-    The price fluctuation of good and stocks are often difficult to predict due to
-    the numerous amounts of variables that play an important role of the price
-    function. While there exists research that reflects on those expected variables
-    \cite{romero}. Additionally, the research conducted which compares multiple results
-    comprised from other researchers and their unique test leading to their results
-    \cite{srivastava}.  The importance of being able to accurately predict the price of
-    commodities is vital to creating plans to aid those in need. The more accurate
-    our forecasting ability is, the better prepared we can hope to be in uncertain
-    times. It would allow emergency services and first responders to allocate enough
-    supplies in the event of unpredictable events that could cause server damage to
-    our infrastructure.  However, there has been minimal research on the price
-    fluctuation of goods and stocks due to external events, such as war, pandemics,
-    or environmental catastrophes. While reports have been brought up that show
-    certain effects of specific tragedies, such as the COVID-19 pandemic report
-    \cite{mead}. The rate that prices fluctuate of goods and stocks during times of
-    crisis and compared to other times of crisis could potentially help uncover
-    areas which are most impacted. Including opportunities for potential preventive
-    measures to attempt to thwart a severe effect.
+    The price fluctuation of good and stocks are often difficult to predict due
+    to the numerous amounts of variables that play an important role of the
+    price function. While there exists research that reflects on those expected
+    variables \cite{romero}. Additionally, the research conducted which compares
+    multiple results comprised from other researchers and their unique test
+    leading to their results \cite{srivastava}.  The importance of being able to
+    accurately predict the price of commodities is vital to creating plans to
+    aid those in need. The more accurate our forecasting ability is, the better
+    prepared we can hope to be in uncertain times. It would allow emergency
+    services and first responders to allocate enough supplies in the event of
+    unpredictable events that could cause server damage to our infrastructure.
+    However, there has been minimal research on the price fluctuation of goods
+    and stocks due to external events, such as war, pandemics, or environmental
+    catastrophes. While reports have been brought up that show certain effects
+    of specific tragedies, such as the COVID-19 pandemic report \cite{mead}. The
+    rate that prices fluctuate of goods and stocks during times of crisis and
+    compared to other times of crisis could potentially help uncover areas which
+    are most impacted. Including opportunities for potential preventive measures
+    to attempt to thwart a severe effect.
 
     The source code for our project can be found at 
     \url{https://www.github.org/Nragis/cs4263-project}.
@@ -123,15 +124,16 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Proposed Approach}
 
-    For this project we will approach it in our own unique way. We will utilize the
-    Energy Information Agency's Natural Gas dataset spanning the past several
-    years. We will also utilize a time-series regression algorithm to analyze and
-    predict the price for natural gas. Using a time-series regression algorithm
-    should help us with utilizing and processing the data set we have chosen to its
-    fullest extent utilizing every bit of knowledge we have to give an accurate
-    prediction not only of the past but also the future. Utilizing this method our
-    prediction data should be superior to the traditional econometric models and
-    have the ability to predict future data points.
+    For this project we will approach it in our own unique way. We will utilize
+    the Energy Information Agency's Natural Gas dataset spanning the past
+    several years. We will also utilize a time-series regression algorithm to
+    analyze and predict the price for natural gas. Using a time-series
+    regression algorithm should help us with utilizing and processing the data
+    set we have chosen to its fullest extent utilizing every bit of knowledge we
+    have to give an accurate prediction not only of the past but also the
+    future. Utilizing this method our prediction data should be superior to the
+    traditional econometric models and have the ability to predict future data
+    points.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Data}
@@ -151,12 +153,13 @@ University of Texas at San Antonio\\
 
 \subsection{Internet Search History}
 
-    We will be using Google Trends (\url{https://trends.google.com/}) as our source for Google search history data.
-    In this paper, we will be using the daily search for the respective
-    commodity: natural gas, [COMMODITY2], and [COMMODITY3] and a few recession
-    related terms such as [RECESSION\_TERMS] each covering the exact time period
-    of the commodity price dataset. These datasets are 2,372, [BLANK], and [BLANK]
-    records long for natural gas, [COMMODITY2], and [COMMODITY3] respectively.
+    We will be using Google Trends (\url{https://trends.google.com/}) as our
+    source for Google search history data.  In this paper, we will be using the
+    daily search for the respective commodity: natural gas, [COMMODITY2], and
+    [COMMODITY3] and a few recession related terms such as [RECESSION\_TERMS]
+    each covering the exact time period of the commodity price dataset. These
+    datasets are 2,372, [BLANK], and [BLANK] records long for natural gas,
+    [COMMODITY2], and [COMMODITY3] respectively.
 
 \subsection{News Report Sentimentality}
 
@@ -187,29 +190,29 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Results}
 
-    Note: Our results relate to a prior direction of our paper, meaning they do not
-    use the same datasets as we mention above.
-
+    Note: Our results relate to a prior direction of our paper, meaning they do
+    not use the same datasets as we mention above.
+    
     Using the World Economic Overview dataset published by the International
     Monetary Fund semi-annually which tracks 44 economic indicators including
     Gross Domestic Product (GDP), Gross Domestic Product per Capita (GDPPC), and
     Average Consumer Prices Inflation Index (PCPI) for 194 countries from 1980
     to 2020. While the database isn't completely full, most of the entries of
     the 8820 row, 57 column dataset are filled.
-
+    
     After which, we turn the dataset into a multivariable (each indicator) time
     series for each country. We then pass a 10 width window over each time
     series, creating a data set of 6208 rows - each with a country, 396 input
     variables (44 indicators across 9 years) and one output variable: the tenth
     year value of GDPPC (in purchasing power).
-
+    
     We then split the dataset into a 0.8, 0.1, 0.1 split for training,
     validation, and test datasets.
 
     We compared four basic models to each other:
     \begin{enumerate}
-        \item Linear: A simple matrix multiplication represented by a single layer,
-            single perceptron neural network.
+        \item Linear: A simple matrix multiplication represented by a single
+            layer, single perceptron neural network.
 
         \item Single-Layer Perceptron: A single layer of 512 neurons with ReLU
             acivation functions.
@@ -227,7 +230,8 @@ University of Texas at San Antonio\\
     \begin{center}
 
         {\small 
-            TABLE 1: COMPARISON OF GDPPC PREDICTION RESULTS ACROSS DIFFERENT MODELS
+            TABLE 1: COMPARISON OF GDPPC PREDICTION RESULTS ACROSS DIFFERENT
+            MODELS
         }
 
         \begin{tabular}{||c c||}

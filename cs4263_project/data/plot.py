@@ -31,7 +31,7 @@ def plot(fig, data, units=None, label_width=0, predictions=None, density=1, sepe
 
         # predictions
         if predictions is not None:
-            predictions = predictions.rolling(density).mean().loc[data.index.intersection(predictions.index),:]
+            predictions = predictions.rolling(density).mean().loc[data.index.intersection(predictions.index)]
 
     fig.patch.set_facecolor('white')
 
