@@ -1,6 +1,19 @@
 # cs4263-project
 Course Project for CS4263: Deep Learning by Quinn Murphey, Adrian Ramos, and Gabriel Soliz.
 
+## Running the Code
+
+To run the code, make sure that the package cs4263_project is in the same 
+directory as your main.py file. Then, navigate to that directory and type
+`python3 main.py`.
+
+If you want to tune any constant variables, all of them can be found at the top
+of main.py.
+
+Most of the details are hidden away into the package, and the package does not
+have much documentation. However, most functions are self explanatory by their
+function names and the main.py code can be read as such.
+
 ## Project Methodology
 - The project will be hosted at [github.com/Nragis/cs4263-project](https://github.com/Nragis/cs4263-project).
   - *Note: Since GitHub diff viewing for Jupyter Notebooks is not very effective, use [ReviewNB](https://app.reviewnb.com/Nragis/cs4263-project/) for viewing changes to notebooks in commits and Pull Requests.*

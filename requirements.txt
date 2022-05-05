@@ -1,4 +1,5 @@
 keras==2.8.0
+keras_tuner==1.1.2
 Keras-Preprocessing==1.1.2
 matplot==0.1.9
 matplotlib==3.5.0

@@ -175,10 +175,12 @@ plot(fig, google_trends_df_std,units="Search Volume", seperate=True, density=30,
 
 print("Creating tf Dataset")
 
+# Combine dataframes into a single one
 full_df = pd.concat([nymex_df_std, google_trends_df_std],axis=1).loc[
     pd.date_range(START_DATE, END_DATE, freq='d')
 ]
 
+# determine which type of dataset to use (windowed, variable, or variable_batched)
 if FEATURE_WIDTH > 0:
     dataset = window_df_to_ds(
         df=full_df.loc[FULL_INDEX], 
@@ -205,9 +207,9 @@ else:
         label_width=LABEL_WIDTH, 
         label_dates=LABEL_INDEX)
     create_models.INPUT_SHAPE = (None, len(FEATURES))
-
 create_models.OUTPUT_SHAPE= (LABEL_WIDTH, len(LABELS))
 
+# Split dataset into train, val, test trio
 train_ds, val_ds, test_ds = train_val_test_split(
         ds=dataset, 
         train_split=TRAIN_SPLIT, 
@@ -217,10 +219,13 @@ train_ds, val_ds, test_ds = train_val_test_split(
         repeats=REPEATS, 
         ds_size=len(LABEL_INDEX))
 
+# Calculate num batches (since we used a generator and can't use len(ds))
 batches_per_epoch = math.ceil(int(TRAIN_SPLIT* len(LABEL_INDEX)) / BATCH_SIZE)
 
+# Stop early if not improving for 5 epochs in our search
 stop_early = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
 
+# Create a Bayesian optimizer using keras_tuner on our train_ds for our stacked LSTM
 stacked_lstm_tuner = kt.BayesianOptimization(
     create_stacked_lstm_hp,
     objective='loss',
@@ -234,6 +239,7 @@ if SEARCH_STACKED_LSTM_HYPERPARAMS:
     print()
     print("Searching Stacked LSTM Hyperparameters")
     print()
+    # Search hyperparams
     stacked_lstm_tuner.search(
         train_ds.repeat(EPOCHS_PER_SEARCH),
         steps_per_epoch=batches_per_epoch,
@@ -243,8 +249,10 @@ if SEARCH_STACKED_LSTM_HYPERPARAMS:
     )
     stacked_lstm_tuner.results_summary(num_trials=1)
 
+# Save results
 best_stacked_lstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
 
+# Create a Bayesian optimizer using keras_tuner on our train_ds for our stacked BiLSTM
 stacked_bilstm_tuner = kt.BayesianOptimization(
     create_stacked_bilstm_hp,
     objective='loss',
@@ -258,6 +266,7 @@ if SEARCH_STACKED_BILSTM_HYPERPARAMS:
     print("Searching Stacked BiLSTM Hyperparameters")
     print()
 
+    # Search hyperparams
     stacked_bilstm_tuner.search(
         train_ds.repeat(EPOCHS_PER_SEARCH),
         steps_per_epoch=batches_per_epoch,
@@ -268,15 +277,16 @@ if SEARCH_STACKED_BILSTM_HYPERPARAMS:
     )
     stacked_bilstm_tuner.results_summary(num_trials=1)
 
+# Save results
 best_stacked_bilstm_hps = stacked_lstm_tuner.get_best_hyperparameters(num_trials=1)[0]
 
 if TRAIN_STACKED_LSTM:
     print()
     print("Training best stacked LSTM model")
     print()
-
+    # Create model based on best hyperparams
     stacked_lstm = stacked_lstm_tuner.hypermodel.build(best_stacked_lstm_hps)
-
+    # Save best model thus far based on val_loss
     save_best = tf.keras.callbacks.ModelCheckpoint(
             "models/trained/stacked_lstm",
             monitor='val_loss',
@@ -294,6 +304,7 @@ if TRAIN_STACKED_LSTM:
                                 callbacks=[save_best],
                                 verbose=1)
 
+    # Print loss and val_loss over epochs
     loss_values = history.history['loss']
     val_loss_values = history.history['val_loss']
     epochs = range(1, len(loss_values)+1)
@@ -311,8 +322,10 @@ if TRAIN_STACKED_BILSTM:
     print("Training best stacked BiLSTM model")
     print()
 
+    # Create model based on best hyperparams
     stacked_bilstm = stacked_bilstm_tuner.hypermodel.build(best_stacked_bilstm_hps)
 
+    # Save best model thus far based on val_loss
     save_best = tf.keras.callbacks.ModelCheckpoint(
             "models/trained/stacked_bilstm",
             monitor='val_loss',
@@ -330,6 +343,7 @@ if TRAIN_STACKED_BILSTM:
                                 callbacks=[save_best],
                                 verbose=1)
 
+    # Print loss and val_loss over epochs
     loss_values = history.history['loss']
     val_loss_values = history.history['val_loss']
     epochs = range(1, len(loss_values)+1)
