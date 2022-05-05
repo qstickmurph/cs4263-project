@@ -27,7 +27,8 @@
 \begin{document}
 
 %%%%%%%%% TITLE
-\title{Using Google Search Volume to Predict Natural Gas Prices with Multiple LSTM Models}
+\title{Using Variable Length Google Search Volume Time-Series to Predict Natural
+    Gas Prices with LSTMs}
 
 
 \author{Quinn Murphey\\
@@ -69,9 +70,9 @@ University of Texas at San Antonio\\
     \cite{tang}, we use historical commodity prices along with Google
     search trends and news report sentimentatlity to hopefully achieve better
     commodity price predictions both in normal and abnormal times. In order
-    to accomplish this task, we will use a combination of different deep
-    learning algorithms including RNNs, CNNs, and GANs. We will compare our
-    results with those from similar papers.
+    to accomplish this task, we will use stacked LSTMs and BiLSTMs and perform a
+    Bayesian search over the models hyperparameters. We will compare our results
+    with those from similar papers.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -104,36 +105,52 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Related Work}
 
-    From what we have observed there seems to be certain trends when trying to
-    predict natural gas prices. The trend majority of the articles such as
-    “Forecasting Natural Gas Spot Prices with Machine Learning” use is by taking
-    the price of the gas as far as you have a data set for and then using
-    adaptive and regression models to predict the gas prices future. The next
-    theme that some articles use such as “Deep Neural Network Model for
-    Improving Price Prediction of Natural Gas” is that they look at the current
-    trend of natural gas and other similar items on something like google and if
-    there is a trend of natural gas possibly becoming volatile with other
-    forecasts also coming to this conclusion then it changes the prediction
-    accordingly. The least common way that I have found is one explored in the
-    paper “Natural Gas Price Prediction with Big Data” where the authors use
-    sentiment analysis on a large body of literature, most commonly the news.
-    This way while uncommon is surprisingly effective with it being able to tell
-    the sentiment within the text and according to how drastic it is it changes
-    the predictions.
+    Our work builds off of a sequence of papers, all working on the NYMEX 
+    natural gas prices dataset. 
+    
+    In their paper, Su et al., 2019 \cite{su} present the application of four 
+    different machine learning algorithms including Gaussian process regression
+    (GPR), gradient boosting machines (GBM), support vector machines (SVN) and 
+    artificial neural networks (ANN) for the monthly prediction of natural
+    gas spot prices.
+
+    Building off of the work of Su et al., Ali, 2020 \cite{ali2020} and Ali et 
+    al., 2021 \cite{ali2021} test out two more algorithms, LSBoost and a deep
+    neural network (DNN) respectively. Both of these models, specifically the 
+    DNN far outperformed the four models proposed by \cite{su}.
+
+    Finally, Tang et al, 2019 \cite{tang} takes an alternative improvement on
+    the work of \cite{su}. In their paper, they use a similar shallow ANN model,
+    but they significantly improve the data used by using sentiment analyzed 
+    yahoo finance articles and daily google search volume for "Natural Gas". 
+    In a direct self-comparison, they found that the model given the google 
+    search volume history far outperformed the model with only historical 
+    prices data and the model that also had sentiment analyzed yahoo finance
+    articles. Finally, Tang et al.'s work was on the four futures prices rather
+    than the spot price.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Proposed Approach}
 
-    For this project we will approach it in our own unique way. We will utilize
-    the Energy Information Agency's Natural Gas dataset spanning the past
-    several years. We will also utilize a time-series regression algorithm to
-    analyze and predict the price for natural gas. Using a time-series
-    regression algorithm should help us with utilizing and processing the data
-    set we have chosen to its fullest extent utilizing every bit of knowledge we
-    have to give an accurate prediction not only of the past but also the
-    future. Utilizing this method our prediction data should be superior to the
-    traditional econometric models and have the ability to predict future data
-    points.
+    In this paper, we combine the methods used in the papers above along with
+    a few additions to produce a model that can accurately predict Natural Gas
+    futures prices a day into the future. We will combine the data improvements
+    of \cite{tang} and the model improvements of \cite{ali2021} to produce 
+    results far outperforming either work. In addition, we will make 
+    improvements on top of both papers in both categories.
+
+    We will utilize variable time-length time series features to predict fixed
+    time-length labels. Our features will span all the prior data that we have,
+    rather than being restricted by a time-window. To help us predict futures
+    prices, we will include historical natural gas futures and spot prices.
+    Additionally, we will use google search volumes for terms we chose related
+    to "Natural Gas" in order to demonstrate public interest in a topic over
+    time.
+
+    Finally, we will use LSTMs rather than simple feed forward perceptrons to
+    perform a more powerful analysis on the time-series features. Following 
+    these LSTMs, we will have a dense feed forward network to process the output
+    of the LSTM layers.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Data}
@@ -303,17 +320,26 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Results}
 
-    We used Python3 for all of our code. Additionally, we use Pandas 
-    \cite{pandas} for our data fetch and preprocessing stages of our research,
-    and we used Keras \cite{keras}, and Tensorflow \cite{tensorflow} for 
-    creating, training, and testing our models. Finally, we used Matplotlib 
-    \cite{matplotlib} to create all of our plots.
+    We used Python3 for all of our code. We used Pytrends for scraping Google
+    Trends data, and we use Pandas \cite{pandas} for our data formatting and
+    preprocessing stages of our research. Finally, we used Keras \cite{keras},
+    and Tensorflow \cite{tensorflow} for creating, training, and testing our
+    models. Finally, we used Matplotlib \cite{matplotlib} to create all of our
+    plots.
 
+    We used a Tensorflow Dataset from generators rather than RaggedTensors to
+    get variable time length tensors from our dataset and handle
+    batching/shuffling. We also used 80\% of the data for training, 10\% for
+    validation, and 10\% for testing in order to help prevent under/overfitting
+    and select the best model.
+    
     We experimented with both stacked LSTMs and stacked BiLSTMs followed by 
-    several layers of densely connected perceptrons, and finally an output 
-    layer. To find the best model for our data, we performed a Bayesian
-    hyperparameter optimization using Keras Tuner \cite{kerastuner} over the
-    hyperparameter dimensions listed in Figure \ref{fig:hyperparameters}). 
+    several layers of densely connected perceptrons, and finally an output layer
+    with a Mean-Squared-Error loss function. To find the best model for our
+    data, we performed a Bayesian hyperparameter optimization using Keras Tuner
+    \cite{kerastuner} over the hyperparameter dimensions listed in Figure
+    \ref{fig:hyperparameters}). We ran this search for 50 trials, and let each
+    model train for 50 epochs a piece.
 
     \begin{figure}[h]
         \caption{Hyperparameter distrbutions searched for our models}
@@ -329,21 +355,176 @@ University of Texas at San Antonio\\
             Dense Nodes   & Int   & 256 & 2048 & Uniform(256)\\
             Dropout Rate  & Float & 0   & 0.999& Uniform\\
             Learning Rate & Float & 1e-6& 1e-1 & Log\\
-            Beta\_1        & Float & 0.8 & 0.999& Linear\\
+            Beta\_1       & Float & 0.8 & 0.999& Linear\\
             \hline
         \end{tabular}
         \label{fig:hyperparameters}
     \end{figure}
 
+    \begin{figure}[h]
+        \caption{Best hyperparamers found by search and overall training loss}
+        \center
+        \begin{tabular}{| c || c | c |}
+            \hline 
+            Name & Stacked LSTM & Stacked BiLSTM\\ 
+            \hline
+            \hline
+            LSTM Layers   & 1 & 1\\
+            LSTM Nodes    & 256 & 32\\
+            Dense Layers  & 1 & 1\\
+            Dense Nodes   & 2048 & 2048\\
+            Dropout Rate  & 0.0 & 0.0\\
+            Learning Rate & 3e-5 & 1e-2\\
+            Beta\_1       & 0.8 & 0.8\\
+            \hline
+            \hline
+            Loss          & 0.004 & 0.004\\
+            \hline
+        \end{tabular}
+        \label{fig:optimal_hyperparameters}
+    \end{figure}
 
+    The best hyperparameters we found are shown in Figure
+    \ref{fig:optimal_hyperparameters}. Note the lack of layers. We will discuss 
+    this in Section 8.
 
+    After finding the optimal hyperparameters, we let the model train for a 
+    total of 250 epochs, and saved the model with the lowest validation loss.
+    See Figure \ref{fig:loss_over_epochs} to see the training and validation 
+    loss over training epochs.
+
+    \begin{figure*}[h]
+        \caption{Stacked BiLSTM 1-day NYMEX futures prices predictions compared 
+            with their true values}
+        \center
+        \includegraphics[width=1.0\textwidth]{images/stacked_bilstm_predictions.png}
+        \label{fig:predictions_graph}
+    \end{figure*}
+
+    \begin{figure}[h]
+        \caption{Training loss (blue) and validation loss (orange) over epochs
+            trained of our Stacked BiLSTM model}
+        \center
+        \includegraphics[scale=.51]{images/stacked_lstm_loss_over_epoch.png}
+        \label{fig:loss_over_epochs}
+    \end{figure}
+
+    After training, we then tested these models on the test dataset we set aside
+    previously, and evaluated the MAE and RMSE as shown above. The results are 
+    in Figure \ref{fig:results}
+
+    \begin{figure}[h]
+        \caption{Comparison of Stacked LSTM to Stacked BiLSTM on predicting
+            Natural Gas futures prices}
+        \center
+        \begin{tabular}{| c || c | c |}
+            \hline
+            Model & MAE & RMSE\\
+            \hline
+            \hline
+            Stacked LSTM   & 0.0326 & 0.0435\\
+            Stacked BiLSTM & 0.0261 & 0.0335\\
+            \hline
+        \end{tabular}
+        \label{fig:results}
+    \end{figure}
+ 
+    Figure \ref{fig:predictions_graph} shows the predictions of our Stacked 
+    BiLSTM model overlayed on top of the correct labels. As you can see, our 
+    model is very close to exactly correct for most of the time-series. 
+    Differing on average only 0.026 standard deviations from the correct value.
+
+    
+\section{Comparisons to Prior Work}
+
+    We will be comparing our results with the results of the four other papers 
+    mentioned in Section 2: Su et al. \cite{su}.  Ali et al., 2020
+    \cite{ali2020}, Ali et al., 2021 \cite{ali2021}, and Tang et al.
+    \cite{tang}.
+
+    While, the first 4 all are predicting Natural Gas spot prices, Tang, like 
+    us, is predicting Natural Gas futures prices. Thus, since Tang is 
+    predicting 4 seperate data points, we must adjust their metrics accordingly:
+    sum seperate MAEs for total MAE and square, sum, then root seperate RMSEs 
+    for total RMSE.
+
+    If we had more time, we would adapt out model to predict spot prices as well
+    to directly compare to the first four papers better. However, since we do 
+    not, we will multiply each MAE by four and each RMSE by two since they were
+    metrics on a single length vector, while our metrics are on a length four
+    vector. We do this to simulate the model having four identically good 
+    outputs. This is not a perfect substitution by a long shot, but it allows
+    us to compare our results more broadly.
+
+    Finally, we take the best model from each paper for predicting one day 
+    ahead. For this reason, we will only be comparing with our Stacked BiLSTM.
+
+    The adjusted metrics from each paper next to our own can be found in Figure 
+    \ref{fig:comparisons}.
+
+    \begin{figure}[h]
+        \caption{Comparison of Stacked LSTM to Stacked BiLSTM on predicting
+            Natural Gas futures prices}
+        \center
+        \begin{tabular}{| p{2.5cm} | p{2cm} || c | c |}
+            \hline
+            Author & Model & MAE & RMSE\\
+            \hline
+            \hline
+            Su et al. \cite{su}                 & ANN       & & 1.4494\\
+            \hline
+            Ali et al., 2020 \cite{ali2020}     & LSBoost   & & 1.1398\\
+            \hline
+            Ali et al., 2021 \cite{ali2021}     & DNN       & & 0.4880\\
+            \hline
+            Tang et al., 2021 \cite{tang}       & ANN       & 0.3663 & 0.2548\\
+            \hline
+            \hline
+            This Study                      & BiLSTM & 0.0261 & 0.0355\\
+            \hline
+        \end{tabular}
+        \label{fig:comparisons}
+    \end{figure}
+
+    As we can see above, our model performed much better than all the other 
+    models. We performed over twice as good as even the prior best model.
+
+    This improvement can likely be dually attributed to a stronger dataset,
+    both from more google search terms, and from a variable time length feature,
+    and to a stronger model, a stacked BiLSTM.
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~x~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-\section{Conclusion}
+\section{Conclusion and Future Work}
 
-We will write this section once we have final results.
+    While our model performed quite well, we have already identified many ways
+    in which it could be easily improved. 
 
-\nocite{*}
+    First, our computation power was limited, likely resulting in our optimal 
+    lstm and dense depth being stunted below what they could be. We believe
+    that with more computation time and power, a model with greater depth could
+    outperform our model. This is supported by the fact that we didn't see even
+    any overfitting in Figure \ref{fig:loss_over_epochs}.
+
+    Second, the sentiment analysis used in Tang et al. could be used in 
+    conjunction with google search volume to create an even more knowledgeable
+    and hopefully superior model.
+
+    Third, a search could be performed over all the top search trends to find 
+    out which trends corrolate the strongest with the NYMEX prices. 
+    Alternatively, one could perform a dimensionality reduction on a larger
+    search volume dataset to feed directly into the model.
+
+    Fourth, a seperate model could be created and trained for each of the labels
+    (including spot price). This would allow the model to specialize more, and
+    you could take the output of all 4 (or 5) of these models to get your 
+    overall output.
+
+    Finally, the ideas in this paper could be expanded to predict prices greater
+    than one day in the future. Either, one could train a new model for each 
+    time delta they would like to predict (1 day, 2 days, 3 days... ), or one
+    could train a single model, and run a recursive calculation, concatentating
+    the predictions for one day into the future onto the features, and feeding 
+    that new time series into the model to predict two days into the future.
 
 {\small
     \bibliographystyle{ieee_fullname}
