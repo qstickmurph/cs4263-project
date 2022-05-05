@@ -138,40 +138,153 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Data}
 
-\subsection{Commodity Prices}
+\subsection{Labels}
 
     To be able to compare directly with Tang et al. \cite{tang}, we will use the
     same daily NYMEX natural gas futures prices from the US Energy Information
     Administration website (\url{https://www.eia.gov/}). These futures are for 1
     month, 2 month, 3 month, and 4 month time periods. In alignment with Tang,
     we will be using data from these four contracts from January 2013 to June
-    2019. 1,638 records in total.
+    2019. 1,638 records in total. Then, we will use simple linear interpolation 
+    to fill in any days without an entry like weekends or holidays. We end up 
+    with data from every day between January 2, 2013 to June 28, 2019, or 2,369 
+    records total.
 
-    In future updates, we will have more papers with different types of
-    commodities, specifically those not related to energy. Until we get better
-    results with the NYMEX dataset, we will not be working with other data.
+    \begin{figure}[h]
+        \caption{Data descriptions of NYMEX futures prices from Jan 2, 2013 to
+            June 28, 2019.} 
+        \center
+        \begin{tabular}{| c || c | c | c | c |}
+            \hline 
+            & Mean & Std Dev & Skew & Kurtosis\\ 
+            \hline
+            \hline
+            Futures 1 & 3.172 & 0.718 & 0.637 &  0.202\\
+            Futures 2 & 3.302 & 0.683 & 0.501 & -0.405\\
+            Futures 3 & 3.232 & 0.660 & 0.461 & -0.540\\
+            Futures 4 & 3.249 & 0.637 & 0.491 & -0.492\\
+            \hline
+        \end{tabular}
+    \end{figure}
 
-\subsection{Internet Search History}
+    Finally, we take the logarithm of every data point to eliminate the
+    exponential nature of financial data and standardize each column seperately
+    using following equations for each element
+    \begin{equation}
+        x' = \frac{(x-\mu)}{\sigma}
+    \end{equation}
+    where $\mu$ is the mean of the column and $\sigma$ is the standard 
+    deviation.
+
+    \begin{figure}[h]
+        \caption{Data descriptions of regularized NYMEX futures prices from Jan 
+            2, 2013 to June 28, 2019}
+        \center
+        \begin{tabular}{| c || c | c | c | c |}
+            \hline 
+            Regularized & Mean & Std Dev & Skew & Kurtosis\\ 
+            \hline
+            \hline
+            Futures 1 & 0 & 1.0 & 0.033 & -0.087\\
+            Futures 2 & 0 & 1.0 & 0.026 & -0.334\\
+            Futures 3 & 0 & 1.0 & 0.040 & -0.475\\
+            Futures 4 & 0 & 1.0 & 0.091 & -0.499\\
+            \hline
+        \end{tabular}
+    \end{figure}
+
+\subsection{Features}
+
+\subsubsection{NYMEX}
+
+    We will be using historical data from the same NYMEX dataset mentioned above
+    including the natural gas spot prices we did not use for our labels. 
+    However, we will nnow be using data ranging from January 5, 2004 to June 28,
+    2019, filling empty days using the same interpolation methods. We end up 
+    with 5,654 records of data, each with five points: one spot price and four 
+    futures prices. See Figure \ref{fig:nymex_graph} for our graph of the NYMEX 
+    dataset.
+
+    We then regularize the data exactly as we did to our label data.
+    
+    \begin{figure*}[h]
+        \caption{NYMEX Futures Prices from Jan 5, 2004 to June 28, 2019. \
+            Labels in orange and features in both blue and orange.} 
+        \center
+        \includegraphics[width=1.0\textwidth]{images/nymex_data.png}
+        \label{fig:nymex_graph}
+    \end{figure*}
+    
+\subsubsection{Google Trends}
 
     We will be using Google Trends (\url{https://trends.google.com/}) as our
     source for Google search history data.  In this paper, we will be using the
-    daily search for the respective commodity: natural gas, [COMMODITY2], and
-    [COMMODITY3] and a few recession related terms such as [RECESSION\_TERMS]
-    each covering the exact time period of the commodity price dataset. These
-    datasets are 2,372, [BLANK], and [BLANK] records long for natural gas,
-    [COMMODITY2], and [COMMODITY3] respectively.
+    daily search volume data of 14 different terms, including "Natural Gas" from
+    January 5, 2004 to June 28, 2019. We end up with the same number of 5,654
+    records as we saw in our NYMEX features. However, for our google trends
+    dataset, we have 14 columns, one for each search term. See Figure 
+    \ref{fig:google_trends_desc} for data descriptive statistics and Figure 
+    \ref{fig:google_trends_graph} for each series plotted (by the month). 
+    
+    Each column is not directly comparable with the other columns, and is only
+    comparable with itself. For example, if "Natural Gas" has 23 for a day while
+    "Recession" has a 73, this does not mean that "Recession" was searched more
+    that day. This only means that "Recession" was searched more on this day
+    than a day where "Recession" is less than 73.
 
-\subsection{News Report Sentimentality}
+    \begin{figure}[h]
+        \caption{Data descriptions of daily Google search volume from Jan 5, 
+            2004 to June 28, 2019.} 
+        \center
+        \begin{tabular}{| c || c | c | c | c |}
+            \hline 
+            & Mean & Std Dev & Skew & Kurtosis\\ 
+            \hline
+            \hline
+            Natural Gas   & 51.95 & 10.62 &  0.181 &  0.758\\
+            Oil           & 44.42 & 0.683 &  0.374 & -0.898\\
+            Coal          & 24.19 & 0.660 &  0.368 &  0.276\\
+            Nuclear Power & 5.662 & 4.064 &  7.544 &  135.1\\
+            Wind Power    & 20.34 & 13.15 &  1.396 &  2.496\\
+            Hydroelectric & 15.68 & 12.59 &  0.852 &  0.424\\
+            Solar Power   & 35.28 & 12.69 &  0.676 &  0.697\\
+            Gold          & 40.15 & 13.01 & -0.040 &  0.627\\
+            Silver        & 47.10 & 10.54 & -0.224 &  0.176\\
+            Platinum      & 43.51 & 8.671 &  0.325 &  1.355\\
+            Copper        & 58.34 & 12.92 &  0.015 & -0.237\\
+            Biofuel       & 12.82 & 12.15 &  1.762 &  4.112\\
+            Recession     & 5.728 & 6.258 &  3.348 &  16.91\\
+            CPI           & 20.55 & 11.41 &  1.031 &  1.893\\
+            \hline
+        \end{tabular}
+        \label{fig:google_trends_desc}
+    \end{figure}
 
-    We collected the title and bodytext of all news articles from Yahoo Finance
-    (We want to experiment with different news sources, both financial and not,
-    and both credible and not) with the keyword natural gas, [COMMODITY2], and 
-    [COMMODITY3] respectively, each covering the exact time period of the
-    commodity price dataset. We do not have an exact length for this dataset due
-    to still deciding which news sites to use.
+    \begin{figure*}[h]
+        \caption{Monthly Google search volume from Jan 5, 2004 to June 28, 2019}
+        \center
+        \includegraphics[width=1.0\textwidth]{images/google_trends_data_monthly.png}
+        \label{fig:google_trends_graph}
+    \end{figure*}
+
+   
+\subsection{Formatting Data}
+
+    Instead of our features consisting of one or N days prior to the day we're 
+    trying to predict (our label) using a time-series window. We will be using
+    variable length time series features spanning from the beginning of our 
+    dataset to the day immediately prior to our label. This allows us to have
+    as much information as possible, given our datasets, for each prediction.
+
+    The input to our model will look like $(Batch, Time, Features)$ where
+    $Batch$ is fixed at 16, $Time$ is variable, and $Feature$ is fixed at 19 (5
+    NYMEX and 14 Google).
+
+    The output of our model will be fixed however, looking like $(Batch, 1, 
+    Labels)$ where $Batch$ is 16, and $Labels$ is 4 (NYMEX Futures).
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-\section{Experiments}
+\section{Metrics}
 
     In alignment with Tang, we will use mean absolute error (MAE) and root mean
     square error (RMSE) to compare results. Our goal is to minimize these
@@ -190,86 +303,38 @@ University of Texas at San Antonio\\
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 \section{Results}
 
-    Note: Our results relate to a prior direction of our paper, meaning they do
-    not use the same datasets as we mention above.
-    
-    Using the World Economic Overview dataset published by the International
-    Monetary Fund semi-annually which tracks 44 economic indicators including
-    Gross Domestic Product (GDP), Gross Domestic Product per Capita (GDPPC), and
-    Average Consumer Prices Inflation Index (PCPI) for 194 countries from 1980
-    to 2020. While the database isn't completely full, most of the entries of
-    the 8820 row, 57 column dataset are filled.
-    
-    After which, we turn the dataset into a multivariable (each indicator) time
-    series for each country. We then pass a 10 width window over each time
-    series, creating a data set of 6208 rows - each with a country, 396 input
-    variables (44 indicators across 9 years) and one output variable: the tenth
-    year value of GDPPC (in purchasing power).
-    
-    We then split the dataset into a 0.8, 0.1, 0.1 split for training,
-    validation, and test datasets.
+    We used Python3 for all of our code. Additionally, we use Pandas 
+    \cite{pandas} for our data fetch and preprocessing stages of our research,
+    and we used Keras \cite{keras}, and Tensorflow \cite{tensorflow} for 
+    creating, training, and testing our models. Finally, we used Matplotlib 
+    \cite{matplotlib} to create all of our plots.
 
-    We compared four basic models to each other:
-    \begin{enumerate}
-        \item Linear: A simple matrix multiplication represented by a single
-            layer, single perceptron neural network.
+    We experimented with both stacked LSTMs and stacked BiLSTMs followed by 
+    several layers of densely connected perceptrons, and finally an output 
+    layer. To find the best model for our data, we performed a Bayesian
+    hyperparameter optimization using Keras Tuner \cite{kerastuner} over the
+    hyperparameter dimensions listed in Figure \ref{fig:hyperparameters}). 
 
-        \item Single-Layer Perceptron: A single layer of 512 neurons with ReLU
-            acivation functions.
-
-        \item Multi-Layer Perceptron: Two layers of 512 neurons with ReLU
-            activation functions
-
-        \item CNN Without Pooling: Three 1D convolutional layers with 3 length
-            kernels and 256, 128, and 64 filters respectively followed by one
-            layer of 256 ReLU perceptrons.
-    \end{enumerate}
-
-    Our results were as follows:
-
-    \begin{center}
-
-        {\small 
-            TABLE 1: COMPARISON OF GDPPC PREDICTION RESULTS ACROSS DIFFERENT
-            MODELS
-        }
-
-        \begin{tabular}{||c c||}
-             \hline
-             Model & MAE\\ [0.5ex]
-             \hline\hline
-             Linear &  379.37 \\
-             \hline
-             Single & 20.31 \\
-             \hline
-             Multi & 19.74 \\
-             \hline
-             CNN & 16.00 \\
-             \hline
+    \begin{figure}[h]
+        \caption{Hyperparameter distrbutions searched for our models}
+        \center
+        \begin{tabular}{| c || c | c | c | c |}
+            \hline 
+            Name & Type & Min & Max & Distribution(Step) \\ 
+            \hline
+            \hline
+            LSTM Layers   & Int   & 1   & 5    & Uniform(1)\\
+            LSTM Nodes    & Int   & 32  & 256  & Uniform(32) \\
+            Dense Layers  & Int   & 1   & 3    & Uniform(1)\\
+            Dense Nodes   & Int   & 256 & 2048 & Uniform(256)\\
+            Dropout Rate  & Float & 0   & 0.999& Uniform\\
+            Learning Rate & Float & 1e-6& 1e-1 & Log\\
+            Beta\_1        & Float & 0.8 & 0.999& Linear\\
+            \hline
         \end{tabular}
-        
-        \vspace{24pt}
+        \label{fig:hyperparameters}
+    \end{figure}
 
-        \includegraphics[scale=0.27]{images/linearFiller.png}
-        {\small
-            FIGURE 2: LINEAR MODEL PREDICTIONS OF GDPPC
-        }
-
-        \includegraphics[scale=0.27]{images/singleFiller.png}
-        {\small
-            FIGURE 3: SINGLE-LAYER PERCEPTRON MODEL PREDICTIONS OF GDPPC
-        }
-
-        \includegraphics[scale=0.27]{images/multiFiller.png}
-        {\small
-            FIGURE 4: MULTI-LAYER PERCEPTRON MODEL PREDICTIONS OF GDPPC
-        }
-
-        \includegraphics[scale=0.27]{images/CNNFiller.png}
-        {\small
-            FIGURE 5: CNN WITHOUT POOLING MODEL PREDICTIONS OF GDPPC
-        }
-    \end{center}
 
 
 
